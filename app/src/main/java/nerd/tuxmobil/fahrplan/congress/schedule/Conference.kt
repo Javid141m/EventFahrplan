@@ -35,6 +35,7 @@ data class Conference(
         internal fun ofSessions(sessions: List<Session>): Conference {
             require(sessions.isNotEmpty()) { "Empty list of sessions." }
             val first = Moment.ofEpochMilli(sessions.first().dateUTC)
+            // TODO Replace with sessions.first().toStartsAtMoment() once Session#relStartTime is no longer used.
             val endingLatest = sessions.endingLatest()
             val endsAt = endingLatest.endsAtDateUtc
             val last = Moment.ofEpochMilli(endsAt)
