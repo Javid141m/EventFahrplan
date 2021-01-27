@@ -1,6 +1,5 @@
 package nerd.tuxmobil.fahrplan.congress.schedule
 
-import androidx.annotation.VisibleForTesting
 import info.metadude.android.eventfahrplan.commons.temporal.Moment
 import info.metadude.android.eventfahrplan.commons.temporal.Moment.Companion.MINUTES_OF_ONE_DAY
 import nerd.tuxmobil.fahrplan.congress.models.Session
@@ -8,31 +7,19 @@ import nerd.tuxmobil.fahrplan.congress.models.Session
 // TODO Use Moment class, merge with ConferenceTimeFrame class?
 data class Conference(
 
-        var firstSessionStartsAt: Int = 0,
-        var lastSessionEndsAt: Int = 0
+        val firstSessionStartsAt: Moment,
+        val lastSessionEndsAt: Moment,
+        val spansMultipleDays: Boolean
 
 ) {
-
-    /**
-     * Calculates the [firstSessionStartsAt] and [lastSessionEndsAt] time stamps for the
-     * given sorted sessions.
-     *
-     * @param sessions     Sorted list of sessions.
-     */
-    @Deprecated("Make ofSessions public and use it and make Conference immutable as soon as Moment is used.")
-    fun calculateTimeFrame(sessions: List<Session>) {
-        val conference = ofSessions(sessions)
-        firstSessionStartsAt = conference.firstSessionStartsAt
-        lastSessionEndsAt = conference.lastSessionEndsAt
-    }
 
     companion object {
 
         /**
          * Creates a [Conference] from the given chronologically sorted [sessions].
          */
-        @VisibleForTesting
-        internal fun ofSessions(sessions: List<Session>): Conference {
+        @JvmStatic
+        fun ofSessions(sessions: List<Session>): Conference {
             require(sessions.isNotEmpty()) { "Empty list of sessions." }
             val first = Moment.ofEpochMilli(sessions.first().dateUTC)
             // TODO Replace with sessions.first().toStartsAtMoment() once Session#relStartTime is no longer used.
@@ -40,7 +27,12 @@ data class Conference(
             val endsAt = endingLatest.endsAtDateUtc
             val last = Moment.ofEpochMilli(endsAt)
             val minutesToAdd = if (first.monthDay == last.monthDay) 0 else MINUTES_OF_ONE_DAY
-            return Conference(firstSessionStartsAt = first.minuteOfDay, lastSessionEndsAt = last.minuteOfDay + minutesToAdd)
+            val veryLast = last.plusMinutes(minutesToAdd.toLong())
+            return Conference(
+                    firstSessionStartsAt = first,
+                    lastSessionEndsAt = veryLast,
+                    spansMultipleDays = minutesToAdd > 0
+            )
         }
 
     }
